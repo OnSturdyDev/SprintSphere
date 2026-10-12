@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudySphere — Student Productivity OS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        .dark .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); }
+        
+        /* Bulletproof 3D Flashcard Styles */
+        .flip-card { perspective: 1000px; }
+        .flip-card-inner { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .flip-card-back { transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+
+    <div id="app" class="flex h-screen overflow-hidden">
+        
+        <!-- Mobile Sidebar Backdrop -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleMobileSidebar()"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="p-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+                        <i data-lucide="orbit" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg bg-gradient-to-r from-primary-600 to-indigo-400 bg-clip-text text-transparent">StudySphere</h1>
+                        <p class="text-xs text-slate-400 font-medium">Student Productivity OS</p>
+                    </div>
+                </div>
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+                <button onclick="switchView('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-800/60 hover:text-primary-600 dark:hover:text-primary-400" data-view="dashboard">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchView('homework')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-800/60 hover:text-primary-600 dark:hover:text-primary-400" data-view="homework">
+                    <i data-lucide="check-square" class="w-5 h-5"></i>
+                    <span>Homework & Tasks</span>
+                </button>
+                <button onclick="switchView('timer')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-800/60 hover:text-primary-600 dark:hover:text-primary-400" data-view="timer">
+                    <i data-lucide="timer" class="w-5 h-5"></i>
+                    <span>Focus Timer</span>
+                </button>
+                <button onclick="switchView('flashcards')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-800/60 hover:text-primary-600 dark:hover:text-primary-400" data-view="flashcards">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span>Flashcards</span>
+                </button>
+                <button onclick="switchView('quizzes')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-800/60 hover:text-primary-600 dark:hover:text-primary-400" data-view="quizzes">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                    <span>Practice Quizzes</span>
+                </button>
+                <button onclick="switchView('notes')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-800/60 hover:text-primary-600 dark:hover:text-primary-400" data-view="notes">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>Study Notes</span>
+                </button>
+            </nav>
+
+            <!-- Sidebar Footer / Streak widget -->
+            <div class="p-4 m-4 rounded-2xl bg-gradient-to-br from-primary-500/10 to-indigo-500/10 border border-primary-500/20 text-center">
+                <div class="flex items-center justify-center space-x-2 text-amber-500 mb-1">
+                    <i data-lucide="flame" class="w-5 h-5 fill-amber-500"></i>
+                    <span id="sidebar-streak" class="font-bold text-lg">1 Day Streak</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Keep up the momentum today!</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            <!-- Top Navbar -->
+            <header class="h-16 border-b border-slate-200 dark:border-slate-800 glass flex items-center justify-between px-6 z-30">
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleMobileSidebar()" class="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h2 id="view-title" class="text-xl font-bold text-slate-800 dark:text-slate-100">Dashboard</h2>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+                    <div class="flex items-center space-x-3 pl-3 border-l border-slate-200 dark:border-slate-800">
+                        <div class="w-9 h-9 rounded-full bg-primary-600 text-white font-semibold flex items-center justify-center shadow-md">
+                            🎓
+                        </div>
+                        <div class="hidden sm:block text-left">
+                            <p class="text-sm font-semibold leading-tight">Student</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Active Scholar</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div id="content-container" class="flex-1 overflow-y-auto p-6 lg:p-8">
+                
+                <!-- DASHBOARD VIEW -->
+                <div id="view-dashboard" class="view-section space-y-8">
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-600 via-indigo-600 to-violet-600 p-8 text-white shadow-xl shadow-primary-500/20">
+                        <div class="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <div class="relative z-10 max-w-2xl">
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold backdrop-blur-md mb-4">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span>Welcome back!</span>
+                            </span>
+                            <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight mb-3">Conquer your studies today.</h1>
+                            <p id="daily-quote" class="text-primary-100 text-sm lg:text-base italic mb-6">"Success is the sum of small efforts, repeated day in and day out."</p>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="switchView('timer')" class="px-5 py-2.5 rounded-xl bg-white text-primary-600 font-semibold text-sm shadow-lg hover:bg-primary-50 transition-all flex items-center space-x-2">
+                                    <i data-lucide="play" class="w-4 h-4 fill-primary-600"></i>
+                                    <span>Start Focus Session</span>
+                                </button>
+                                <button onclick="switchView('homework')" class="px-5 py-2.5 rounded-xl bg-white/10 text-white font-semibold text-sm backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all flex items-center space-x-2">
+                                    <i data-lucide="check-square" class="w-4 h-4"></i>
+                                    <span>View Homework</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+                                <i data-lucide="flame" class="w-6 h-6 fill-amber-500"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Study Streak</p>
+                                <h3 id="stat-streak" class="text-2xl font-bold text-slate-800 dark:text-slate-100">1 Day</h3>
+                            </div>
+                        </div>
+                        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+                                <i data-lucide="check-circle" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Tasks Completed</p>
+                                <h3 id="stat-tasks" class="text-2xl font-bold text-slate-800 dark:text-slate-100">0</h3>
+                            </div>
+                        </div>
+                        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold">
+                                <i data-lucide="clock" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Focus Time</p>
+                                <h3 id="stat-focus" class="text-2xl font-bold text-slate-800 dark:text-slate-100">0m</h3>
+                            </div>
+                        </div>
+                        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center font-bold">
+                                <i data-lucide="book-open" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Study Notes</p>
+                                <h3 id="stat-notes" class="text-2xl font-bold text-slate-800 dark:text-slate-100">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Upcoming Homework</h3>
+                                <button onclick="switchView('homework')" class="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline">View All</button>
+                            </div>
+                            <div id="dash-homework-list" class="space-y-3"></div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2">Study Tools at Your Fingertips</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Select a tool below to dive straight into your session.</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button onclick="switchView('timer')" class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-500 transition-all text-left group">
+                                    <div class="w-10 h-10 rounded-lg bg-primary-500/10 text-primary-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="timer" class="w-5 h-5"></i>
+                                    </div>
+                                    <h4 class="font-semibold text-sm mb-1">Pomodoro Timer</h4>
+                                    <p class="text-xs text-slate-400">Stay locked in</p>
+                                </button>
+                                <button onclick="switchView('flashcards')" class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-500 transition-all text-left group">
+                                    <div class="w-10 h-10 rounded-lg bg-violet-500/10 text-violet-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="layers" class="w-5 h-5"></i>
+                                    </div>
+                                    <h4 class="font-semibold text-sm mb-1">Flashcards</h4>
+                                    <p class="text-xs text-slate-400">Memorize fast</p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HOMEWORK VIEW -->
+                <div id="view-homework" class="view-section hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Homework & Assignments</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Manage your schoolwork, priorities, and deadlines.</p>
+                        </div>
+                        <button onclick="openHomeworkModal()" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Add Assignment</span>
+                        </button>
+                    </div>
+
+                    <div class="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <button onclick="filterHomework('all')" class="hw-filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-primary-600 text-white transition-all" data-filter="all">All Tasks</button>
+                        <button onclick="filterHomework('pending')" class="hw-filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all" data-filter="pending">Pending</button>
+                        <button onclick="filterHomework('completed')" class="hw-filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all" data-filter="completed">Completed</button>
+                    </div>
+
+                    <div id="homework-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- TIMER VIEW -->
+                <div id="view-timer" class="view-section hidden space-y-6">
+                    <div class="max-w-xl mx-auto text-center space-y-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Focus Timer</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Boost concentration using the Pomodoro Technique.</p>
+                        </div>
+
+                        <div class="inline-flex p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800">
+                            <button onclick="setTimerMode('work')" id="mode-work" class="timer-mode-btn px-5 py-2 rounded-xl text-xs font-bold bg-primary-600 text-white transition-all">Work (25m)</button>
+                            <button onclick="setTimerMode('shortBreak')" id="mode-shortBreak" class="timer-mode-btn px-5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 transition-all">Short Break (5m)</button>
+                            <button onclick="setTimerMode('longBreak')" id="mode-longBreak" class="timer-mode-btn px-5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 transition-all">Long Break (15m)</button>
+                        </div>
+
+                        <div class="relative w-64 h-64 mx-auto flex items-center justify-center rounded-full border-8 border-primary-500/20 shadow-2xl">
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span id="timer-display" class="text-5xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">25:00</span>
+                                <span id="timer-status-label" class="text-xs uppercase tracking-widest text-primary-600 font-bold mt-2">Ready to Focus</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center space-x-4">
+                            <button id="timer-start-btn" onclick="toggleTimer()" class="px-8 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-500/30 transition-all flex items-center space-x-2">
+                                <i id="timer-start-icon" data-lucide="play" class="w-5 h-5 fill-white"></i>
+                                <span id="timer-start-text">Start Session</span>
+                            </button>
+                            <button onclick="resetTimer()" class="px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center space-x-2">
+                                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FLASHCARDS VIEW (WITH ANTI-CHEAT FIX) -->
+                <div id="view-flashcards" class="view-section hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Flashcards</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Flip through study cards to master key concepts.</p>
+                        </div>
+                        <button onclick="openFlashcardModal()" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Create Flashcard</span>
+                        </button>
+                    </div>
+
+                    <div class="max-w-xl mx-auto space-y-6">
+                        <div id="flashcard-container" class="flip-card w-full h-80 cursor-pointer" onclick="flipCard()">
+                            <div id="flip-card-inner-box" class="flip-card-inner relative w-full h-full text-center shadow-xl rounded-3xl">
+                                <div class="flip-card-front absolute inset-0 w-full h-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col items-center justify-center p-8">
+                                    <span class="text-xs uppercase tracking-widest text-primary-600 font-bold mb-2">Question (Click to Flip)</span>
+                                    <h3 id="fc-front-text" class="text-xl font-bold text-slate-800 dark:text-slate-100">Loading flashcards...</h3>
+                                </div>
+                                <div class="flip-card-back absolute inset-0 w-full h-full bg-gradient-to-tr from-primary-600 to-indigo-600 text-white rounded-3xl flex flex-col items-center justify-center p-8">
+                                    <span class="text-xs uppercase tracking-widest text-primary-100 font-bold mb-2">Answer</span>
+                                    <h3 id="fc-back-text" class="text-xl font-bold">...</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <button onclick="prevCard()" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center space-x-2">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span>Previous</span>
+                            </button>
+                            <span id="fc-counter" class="text-sm font-semibold text-slate-500">Card 1 of 1</span>
+                            <button onclick="nextCard()" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center space-x-2">
+                                <span>Next</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRACTICE QUIZZES VIEW (WITH BULLETPROOF RESTART FIX) -->
+                <div id="view-quizzes" class="view-section hidden space-y-6">
+                    <div class="max-w-2xl mx-auto space-y-6">
+                        <div class="text-center">
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Practice Quiz</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Test your knowledge with instant feedback and explanations.</p>
+                        </div>
+
+                        <div id="quiz-card-wrapper" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm space-y-6">
+                            <!-- Re-creatable Quiz Container -->
+                            <div id="quiz-inner-content">
+                                <div class="flex items-center justify-between text-xs font-semibold text-slate-400 mb-4">
+                                    <span id="quiz-progress-text">Question 1 of 3</span>
+                                    <span id="quiz-score-badge" class="px-3 py-1 rounded-full bg-primary-50 dark:bg-slate-800 text-primary-600">Score: 0</span>
+                                </div>
+                                <h3 id="quiz-question" class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Loading quiz...</h3>
+                                <div id="quiz-options" class="space-y-3 mb-6"></div>
+                                <div id="quiz-feedback" class="hidden p-4 rounded-xl text-sm font-medium mb-4"></div>
+                                <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition-all shadow-lg shadow-primary-500/20">Next Question</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STUDY NOTES VIEW -->
+                <div id="view-notes" class="view-section hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Study Notes Organiser</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Organize your summaries, formulae, and key ideas.</p>
+                        </div>
+                        <button onclick="openNoteModal()" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>New Note</span>
+                        </button>
+                    </div>
+
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="note-search" oninput="filterNotes()" placeholder="Search notes by title or content..." class="w-full pl-12 pr-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-primary-500 text-sm">
+                    </div>
+
+                    <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="homework-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Add New Assignment</h3>
+            <form id="homework-form" onsubmit="saveHomework(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Title</label>
+                    <input type="text" id="hw-title" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Subject</label>
+                    <input type="text" id="hw-subject" required placeholder="e.g. Mathematics" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Due Date</label>
+                        <input type="date" id="hw-date" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Priority</label>
+                        <select id="hw-priority" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500">
+                            <option value="Low" class="dark:bg-slate-900">Low</option>
+                            <option value="Medium" class="dark:bg-slate-900" selected>Medium</option>
+                            <option value="High" class="dark:bg-slate-900">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeHomeworkModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-lg">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="flashcard-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Create New Flashcard</h3>
+            <form id="flashcard-form" onsubmit="saveFlashcard(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Question / Front</label>
+                    <textarea id="fc-front-input" required rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Answer / Back</label>
+                    <textarea id="fc-back-input" required rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeFlashcardModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-lg">Save Card</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="note-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Create Study Note</h3>
+            <form id="note-form" onsubmit="saveNote(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Title</label>
+                    <input type="text" id="note-title" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Category / Subject</label>
+                    <input type="text" id="note-category" required placeholder="e.g. Science" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Content / Summary</label>
+                    <textarea id="note-content" required rows="5" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:border-primary-500" placeholder="Type key notes here..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeNoteModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-lg">Save Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CODE -->
+    <script>
+        let state = {
+            currentView: 'dashboard',
+            streak: parseInt(localStorage.getItem('studysphere_streak')) || 1,
+            completedTasksCount: parseInt(localStorage.getItem('studysphere_tasks')) || 0,
+            focusMinutes: parseInt(localStorage.getItem('studysphere_focus')) || 0,
+            homework: JSON.parse(localStorage.getItem('studysphere_homework')) || [
+                { id: 1, title: 'Algebra Problem Set', subject: 'Mathematics', dueDate: '2026-10-15', priority: 'High', completed: false },
+                { id: 2, title: 'History Essay Draft', subject: 'Social Studies', dueDate: '2026-10-18', priority: 'Medium', completed: false }
+            ],
+            flashcards: JSON.parse(localStorage.getItem('studysphere_flashcards')) || [
+                { id: 1, front: 'What is the powerhouse of the cell?', back: 'Mitochondria' },
+                { id: 2, front: 'What is the formula for the area of a circle?', back: 'A = πr²' },
+                { id: 3, front: 'In what year did World War II end?', back: '1945' }
+            ],
+            notes: JSON.parse(localStorage.getItem('studysphere_notes')) || [
+                { id: 1, title: 'Photosynthesis Basics', category: 'Biology', content: 'Light-dependent reactions occur in the thylakoid membrane, converting solar energy into chemical energy.' }
+            ],
+            darkMode: localStorage.getItem('studysphere_dark') === 'true'
+        };
+
+        const quotes = [
+            "Success is the sum of small efforts, repeated day in and day out.",
+            "The expert in anything was once a beginner.",
+            "Don't watch the clock; do what it does. Keep going.",
+            "The future belongs to those who believe in the beauty of their dreams.",
+            "Education is the passport to the future, for tomorrow belongs to those who prepare for it today."
+        ];
+
+        window.onload = function() {
+            if (state.darkMode) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'sun');
+            }
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('daily-quote').innerText = `"${randomQuote}"`;
+
+            renderAll();
+            lucide.createIcons();
+        };
+
+        function saveData() {
+            localStorage.setItem('studysphere_streak', state.streak);
+            localStorage.setItem('studysphere_tasks', state.completedTasksCount);
+            localStorage.setItem('studysphere_focus', state.focusMinutes);
+            localStorage.setItem('studysphere_homework', JSON.stringify(state.homework));
+            localStorage.setItem('studysphere_flashcards', JSON.stringify(state.flashcards));
+            localStorage.setItem('studysphere_notes', JSON.stringify(state.notes));
+            localStorage.setItem('studysphere_dark', state.darkMode);
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderHomework();
+            renderFlashcard();
+            renderQuizzes();
+            renderNotes();
+            lucide.createIcons();
+        }
+
+        function switchView(viewName) {
+            state.currentView = viewName;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.getAttribute('data-view') === viewName) {
+                    btn.classList.add('bg-primary-50', 'dark:bg-slate-800', 'text-primary-600', 'dark:text-primary-400');
+                    btn.classList.remove('text-slate-600', 'dark:text-slate-400');
+                } else {
+                    btn.classList.remove('bg-primary-50', 'dark:bg-slate-800', 'text-primary-600', 'dark:text-primary-400');
+                    btn.classList.add('text-slate-600', 'dark:text-slate-400');
+                }
+            });
+
+            const titles = {
+                dashboard: 'Dashboard',
+                homework: 'Homework & Assignments',
+                timer: 'Focus Timer',
+                flashcards: 'Flashcards',
+                quizzes: 'Practice Quizzes',
+                notes: 'Study Notes'
+            };
+            document.getElementById('view-title').innerText = titles[viewName];
+            
+            const sidebar = document.getElementById('sidebar');
+            if(!sidebar.classList.contains('-translate-x-full')) {
+                toggleMobileSidebar();
+            }
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
+        function toggleDarkMode() {
+            state.darkMode = !state.darkMode;
+            document.documentElement.classList.toggle('dark');
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.setAttribute('data-lucide', state.darkMode ? 'sun' : 'moon');
+            lucide.createIcons();
+            saveData();
+        }
+
+        function renderDashboard() {
+            document.getElementById('stat-streak').innerText = `${state.streak} Day${state.streak > 1 ? 's' : ''}`;
+            document.getElementById('sidebar-streak').innerText = `${state.streak} Day Streak`;
+            document.getElementById('stat-tasks').innerText = state.completedTasksCount;
+            document.getElementById('stat-focus').innerText = `${state.focusMinutes}m`;
+            document.getElementById('stat-notes').innerText = state.notes.length;
+
+            const dashHwList = document.getElementById('dash-homework-list');
+            const pendingHw = state.homework.filter(h => !h.completed).slice(0, 3);
+            if(pendingHw.length === 0) {
+                dashHwList.innerHTML = `<p class="text-xs text-slate-400 italic">No pending homework. Awesome job!</p>`;
+            } else {
+                dashHwList.innerHTML = pendingHw.map(h => `
+                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                        <div>
+                            <h4 class="text-sm font-semibold">${h.title}</h4>
+                            <p class="text-xs text-slate-400">${h.subject} • Due ${h.dueDate}</p>
+                        </div>
+                        <button onclick="toggleHomeworkComplete(${h.id})" class="px-3 py-1 rounded-lg bg-primary-50 dark:bg-slate-700 text-primary-600 dark:text-primary-400 text-xs font-semibold hover:bg-primary-100 transition-all">Complete</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        let currentHwFilter = 'all';
+
+        function filterHomework(filter) {
+            currentHwFilter = filter;
+            document.querySelectorAll('.hw-filter-btn').forEach(btn => {
+                if(btn.getAttribute('data-filter') === filter) {
+                    btn.classList.add('bg-primary-600', 'text-white');
+                    btn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+                } else {
+                    btn.classList.remove('bg-primary-600', 'text-white');
+                    btn.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+                }
+            });
+            renderHomework();
+        }
+
+        function renderHomework() {
+            const list = document.getElementById('homework-list');
+            let filtered = state.homework;
+            if(currentHwFilter === 'pending') filtered = state.homework.filter(h => !h.completed);
+            if(currentHwFilter === 'completed') filtered = state.homework.filter(h => h.completed);
+
+            if(filtered.length === 0) {
+                list.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-sm">No homework tasks found in this view.</div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(h => `
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${h.priority === 'High' ? 'bg-rose-500/10 text-rose-500' : h.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}">${h.priority} Priority</span>
+                            <span class="text-xs text-slate-400">${h.dueDate}</span>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 ${h.completed ? 'line-through opacity-50' : ''}">${h.title}</h3>
+                        <p class="text-xs text-slate-500">${h.subject}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button onclick="toggleHomeworkComplete(${h.id})" class="text-xs font-semibold ${h.completed ? 'text-emerald-500' : 'text-primary-600'} hover:underline">
+                            ${h.completed ? '✓ Completed' : 'Mark Complete'}
+                        </button>
+                        <button onclick="deleteHomework(${h.id})" class="text-xs text-rose-500 hover:underline">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openHomeworkModal() { document.getElementById('homework-modal').classList.remove('hidden'); }
+        function closeHomeworkModal() { document.getElementById('homework-modal').classList.add('hidden'); document.getElementById('homework-form').reset(); }
+
+        function saveHomework(e) {
+            e.preventDefault();
+            const newHw = {
+                id: Date.now(),
+                title: document.getElementById('hw-title').value,
+                subject: document.getElementById('hw-subject').value,
+                dueDate: document.getElementById('hw-date').value,
+                priority: document.getElementById('hw-priority').value,
+                completed: false
+            };
+            state.homework.push(newHw);
+            saveData();
+            closeHomeworkModal();
+            renderAll();
+        }
+
+        function toggleHomeworkComplete(id) {
+            const hw = state.homework.find(h => h.id === id);
+            if(hw) {
+                hw.completed = !hw.completed;
+                if(hw.completed) state.completedTasksCount++;
+                else state.completedTasksCount = Math.max(0, state.completedTasksCount - 1);
+                saveData();
+                renderAll();
+            }
+        }
+
+        function deleteHomework(id) {
+            state.homework = state.homework.filter(h => h.id !== id);
+            saveData();
+            renderAll();
+        }
+
+        let timerInterval = null;
+        let timerSeconds = 25 * 60;
+        let timerRunning = false;
+        let currentTimerMode = 'work';
+
+        function setTimerMode(mode) {
+            currentTimerMode = mode;
+            document.querySelectorAll('.timer-mode-btn').forEach(btn => {
+                btn.className = "timer-mode-btn px-5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 transition-all";
+            });
+            document.getElementById(`mode-${mode}`).className = "timer-mode-btn px-5 py-2 rounded-xl text-xs font-bold bg-primary-600 text-white transition-all";
+
+            if(mode === 'work') timerSeconds = 25 * 60;
+            if(mode === 'shortBreak') timerSeconds = 5 * 60;
+            if(mode === 'longBreak') timerSeconds = 15 * 60;
+
+            pauseTimer();
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timer-display').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            if(timerRunning) pauseTimer();
+            else startTimer();
+        }
+
+        function startTimer() {
+            timerRunning = true;
+            document.getElementById('timer-start-text').innerText = 'Pause Session';
+            document.getElementById('timer-start-icon').setAttribute('data-lucide', 'pause');
+            document.getElementById('timer-status-label').innerText = currentTimerMode === 'work' ? 'Focusing...' : 'Taking a break...';
+            lucide.createIcons();
+
+            timerInterval = setInterval(() => {
+                if(timerSeconds > 0) {
+                    timerSeconds--;
+                    if(currentTimerMode === 'work') {
+                        state.focusMinutes++;
+                        saveData();
+                    }
+                    updateTimerDisplay();
+                } else {
+                    pauseTimer();
+                    alertSound();
+                    document.getElementById('timer-status-label').innerText = 'Session Completed!';
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            timerRunning = false;
+            clearInterval(timerInterval);
+            document.getElementById('timer-start-text').innerText = 'Resume Session';
+            document.getElementById('timer-start-icon').setAttribute('data-lucide', 'play');
+            document.getElementById('timer-status-label').innerText = 'Paused';
+            lucide.createIcons();
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            setTimerMode(currentTimerMode);
+            document.getElementById('timer-status-label').innerText = 'Ready to Focus';
+        }
+
+        function alertSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+        }
+
+        let currentCardIndex = 0;
+
+        function renderFlashcard() {
+            if(state.flashcards.length === 0) {
+                document.getElementById('fc-front-text').innerText = 'No flashcards available.';
+                document.getElementById('fc-back-text').innerText = 'Create your first flashcard!';
+                document.getElementById('fc-counter').innerText = '0 of 0';
+                return;
+            }
+            if(currentCardIndex >= state.flashcards.length) currentCardIndex = 0;
+            const card = state.flashcards[currentCardIndex];
+            document.getElementById('fc-front-text').innerText = card.front;
+            document.getElementById('fc-back-text').innerText = card.back;
+            document.getElementById('fc-counter').innerText = `Card ${currentCardIndex + 1} of ${state.flashcards.length}`;
+            
+            // Immediately snap back to front without flip state
+            const innerBox = document.getElementById('flip-card-inner-box');
+            innerBox.style.transition = 'none';
+            document.getElementById('flashcard-container').classList.remove('flipped');
+            void innerBox.offsetWidth; // reflow
+            innerBox.style.transition = 'transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)';
+        }
+
+        function flipCard() {
+            document.getElementById('flashcard-container').classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            if(state.flashcards.length === 0) return;
+            currentCardIndex = (currentCardIndex + 1) % state.flashcards.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            if(state.flashcards.length === 0) return;
+            currentCardIndex = (currentCardIndex - 1 + state.flashcards.length) % state.flashcards.length;
+            renderFlashcard();
+        }
+
+        function openFlashcardModal() { document.getElementById('flashcard-modal').classList.remove('hidden'); }
+        function closeFlashcardModal() { document.getElementById('flashcard-modal').classList.add('hidden'); document.getElementById('flashcard-form').reset(); }
+
+        function saveFlashcard(e) {
+            e.preventDefault();
+            const newCard = {
+                id: Date.now(),
+                front: document.getElementById('fc-front-input').value,
+                back: document.getElementById('fc-back-input').value
+            };
+            state.flashcards.push(newCard);
+            saveData();
+            closeFlashcardModal();
+            currentCardIndex = state.flashcards.length - 1;
+            renderFlashcard();
+        }
+
+        // PRACTICE QUIZZES & BULLETPROOF RESTART FIX
+        const quizQuestions = [
+            {
+                question: "What is the chemical symbol for Gold?",
+                options: ["Ag", "Au", "Pb", "Fe"],
+                correct: 1,
+                explanation: "Au comes from 'aurum', the Latin word for gold."
+            },
+            {
+                question: "Which planet is known as the Red Planet?",
+                options: ["Venus", "Jupiter", "Mars", "Saturn"],
+                correct: 2,
+                explanation: "Mars appears red due to iron oxide (rust) on its surface."
+            },
+            {
+                question: "What is 7 multiplied by 8?",
+                options: ["54", "56", "64", "48"],
+                correct: 1,
+                explanation: "7 × 8 = 56."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+        let quizAnswered = false;
+
+        function renderQuizzes() {
+            const innerContainer = document.getElementById('quiz-inner-content');
+            if(!innerContainer) return;
+
+            if(currentQuizIndex >= quizQuestions.length) {
+                innerContainer.innerHTML = `
+                    <div class="text-center space-y-4 py-8">
+                        <div class="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto text-2xl font-bold">🎉</div>
+                        <h3 class="text-2xl font-bold">Quiz Completed!</h3>
+                        <p class="text-slate-500">You scored ${quizScore} out of ${quizQuestions.length}.</p>
+                        <button onclick="restartQuiz()" class="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-semibold shadow-lg">Try Again</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Restore the standard quiz UI structure if restarting
+            innerContainer.innerHTML = `
+                <div class="flex items-center justify-between text-xs font-semibold text-slate-400 mb-4">
+                    <span id="quiz-progress-text">Question ${currentQuizIndex + 1} of ${quizQuestions.length}</span>
+                    <span id="quiz-score-badge" class="px-3 py-1 rounded-full bg-primary-50 dark:bg-slate-800 text-primary-600">Score: ${quizScore}</span>
+                </div>
+                <h3 id="quiz-question" class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6"></h3>
+                <div id="quiz-options" class="space-y-3 mb-6"></div>
+                <div id="quiz-feedback" class="hidden p-4 rounded-xl text-sm font-medium mb-4"></div>
+                <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition-all shadow-lg shadow-primary-500/20">Next Question</button>
+            `;
+
+            const q = quizQuestions[currentQuizIndex];
+            document.getElementById('quiz-question').innerText = q.question;
+            
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = q.options.map((opt, idx) => `
+                <button onclick="selectQuizOption(${idx})" class="quiz-opt-btn w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-500 font-medium text-sm transition-all">${opt}</button>
+            `).join('');
+
+            quizAnswered = false;
+        }
+
+        function selectQuizOption(selectedIndex) {
+            if(quizAnswered) return;
+            quizAnswered = true;
+            const q = quizQuestions[currentQuizIndex];
+            const feedbackEl = document.getElementById('quiz-feedback');
+            feedbackEl.classList.remove('hidden');
+
+            if(selectedIndex === q.correct) {
+                quizScore++;
+                feedbackEl.className = "p-4 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-600";
+                feedbackEl.innerHTML = `<strong>Correct!</strong> ${q.explanation}`;
+            } else {
+                feedbackEl.className = "p-4 rounded-xl text-sm font-medium bg-rose-500/10 text-rose-600";
+                feedbackEl.innerHTML = `<strong>Incorrect.</strong> ${q.explanation}`;
+            }
+            document.getElementById('quiz-score-badge').innerText = `Score: ${quizScore}`;
+            document.getElementById('quiz-next-btn').classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            currentQuizIndex++;
+            renderQuizzes();
+        }
+
+        function restartQuiz() {
+            currentQuizIndex = 0;
+            quizScore = 0;
+            renderQuizzes();
+        }
+
+        function renderNotes() {
+            const grid = document.getElementById('notes-grid');
+            const searchTerm = document.getElementById('note-search')?.value.toLowerCase() || '';
+            const filtered = state.notes.filter(n => n.title.toLowerCase().includes(searchTerm) || n.content.toLowerCase().includes(searchTerm));
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-sm">No study notes found. Click "New Note" to create one.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(n => `
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+                    <div class="space-y-2">
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-50 dark:bg-slate-800 text-primary-600">${n.category}</span>
+                        <h3 class="font-bold text-base text-slate-800 dark:text-slate-100">${n.title}</h3>
+                        <p class="text-xs text-slate-500 line-clamp-3">${n.content}</p>
+                    </div>
+                    <div class="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button onclick="deleteNote(${n.id})" class="text-xs text-rose-500 hover:underline">Delete Note</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterNotes() { renderNotes(); }
+
+        function openNoteModal() { document.getElementById('note-modal').classList.remove('hidden'); }
+        function closeNoteModal() { document.getElementById('note-modal').classList.add('hidden'); document.getElementById('note-form').reset(); }
+
+        function saveNote(e) {
+            e.preventDefault();
+            const newNote = {
+                id: Date.now(),
+                title: document.getElementById('note-title').value,
+                category: document.getElementById('note-category').value,
+                content: document.getElementById('note-content').value
+            };
+            state.notes.push(newNote);
+            saveData();
+            closeNoteModal();
+            renderAll();
+        }
+
+        function deleteNote(id) {
+            state.notes = state.notes.filter(n => n.id !== id);
+            saveData();
+            renderAll();
+        }
+    </script>
+</body>
+</html>
